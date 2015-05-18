@@ -18,12 +18,19 @@ void main() {
 
 @app.Interceptor(r'/.*')
 interceptor() {
-  app.chain.next(() {
-    app.response = app.response.change(headers: {
-      "Access-Control-Allow-Origin": "*"
-    });
+  app.response = app.response.change(headers: {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "Key,Sign"
   });
+
+  if (app.request.method == "OPTIONS") {
+    app.chain.interrupt();
+  } else {
+    app.chain.next(() => app.response.change(
+        headers: {"Access-Control-Allow-Origin": "*"}));
+  }
 }
+
 
 @app.Route('/token', methods: const [app.POST])
 token(@app.QueryParam("code") String code, @app.QueryParam("redirect_uri") String redirectUri, @app.QueryParam("client_id") String identifier, @app.QueryParam("client_secret") String secret)  {
@@ -47,3 +54,46 @@ buys(@app.Body(app.JSON) Map json) {
     print(response);
   });
 }
+
+
+@app.Route('/cryptsy/api/v2/:action', methods: const [app.POST, app.PUT, app.GET, app.DELETE])
+cryptsy() {
+  String path = app.request.requestedUri.pathSegments.sublist(1).join('/');
+  Map<String, String> headers = {
+    'Sign': app.request.headers['Sign'],
+    'Key': app.request.headers['Key'] 
+    };
+  
+  String url = app.request.requestedUri.replace(scheme: 'https',
+                                         host: "api.cryptsy.com",
+                                         port: 443,
+                                         path: path).toString();
+
+  switch(app.request.method){
+    case 'GET':
+      return http.get(url, headers: headers).then((response) {
+          print(response.body);
+          return response; 
+        });
+    case 'PUT':
+      return http.put(url, 
+          headers: headers, 
+          body: app.request.body).then((response) {
+          print(response.body);
+          return response;
+        });
+    case 'POST':
+      return http.post(url, headers: headers, 
+          body: app.request.body).then((response) {
+          print(response.body);
+          return response;
+        });
+    case 'DELETE':
+      return http.delete(url, headers: headers).then((response) {
+          print(response.body);
+          return response;
+        });
+  }
+}
+
+
