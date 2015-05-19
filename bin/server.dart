@@ -9,8 +9,6 @@ import 'package:shelf/shelf.dart' as shelf;
 import 'package:http/http.dart' as http;
 import 'package:redstone/server.dart' as app;
 
-Coinbase coinbase;
-
 void main() {
   app.setupConsoleLog();
   app.start(port: 8081);
@@ -35,15 +33,16 @@ token(@app.QueryParam("code") String code, @app.QueryParam("redirect_uri") Strin
   return http.post(uri).then((response) {
     String accessToken = JSON.decode(response.body)['access_token'];
     print(accessToken);
-    coinbase = new Coinbase(accessToken);
     return accessToken;
   });
 }
 
 @app.Route('/buys', methods: const [app.POST])
-buys(@app.Body(app.JSON) Map json) {
-  coinbase.buy(json).then((response) {
-    print("buy!");
-    print(response);
-  });
+buys(@app.QueryParam("accessToken") String token, @app.Body(app.JSON) Map json) {
+  print("hello there!");
+  return "{}";
+//  new Coinbase(token).buy(json).then((response) {
+//    print("buy!");
+//    print(response);
+//  });
 }
